@@ -1,6 +1,7 @@
-# encoding=utf8
+# -- coding: utf-8 --
 import os
 import codecs
+import  time
 import pickle
 import itertools
 from collections import OrderedDict
@@ -35,10 +36,11 @@ flags.DEFINE_boolean("zeros",       False,      "Wither replace digits with zero
 flags.DEFINE_boolean("lower",       True,       "Wither lower case")
 
 flags.DEFINE_integer("max_epoch",   100,        "maximum training epochs")
-flags.DEFINE_integer("steps_check", 100,        "steps per checkpoint")
-flags.DEFINE_string("ckpt_path",    "ckpt",      "Path to save model")
+flags.DEFINE_integer("early_sto_epoch_margin",   10,        "epochs of stop training if dev-loss not decrease")
+flags.DEFINE_integer("steps_check", 435,        "steps per checkpoint")
+flags.DEFINE_string("ckpt_path",    "ckpt_biLSTM",      "Path to save model")
 flags.DEFINE_string("summary_path", "summary",      "Path to store summaries")
-flags.DEFINE_string("log_file",     "train.log",    "File for log")
+flags.DEFINE_string("log_file",     'log'+time.strftime('%y%m%d%H%M%S', time.localtime(time.time()))+'log',    "File for log")
 flags.DEFINE_string("map_file",     "maps.pkl",     "file for maps")
 flags.DEFINE_string("vocab_file",   "vocab.json",   "File for vocab")
 flags.DEFINE_string("config_file",  "config_file",  "File for config")
@@ -49,7 +51,7 @@ flags.DEFINE_string("train_file",   os.path.join("data", "example.train"),  "Pat
 flags.DEFINE_string("dev_file",     os.path.join("data", "example.dev"),    "Path for dev data")
 flags.DEFINE_string("test_file",    os.path.join("data", "example.test"),   "Path for test data")
 
-flags.DEFINE_string("model_type", "idcnn", "Model type, can be idcnn or bilstm")
+flags.DEFINE_string("model_type", "bilstm", "Model type, can be idcnn or bilstm")
 #flags.DEFINE_string("model_type", "bilstm", "Model type, can be idcnn or bilstm")
 
 FLAGS = tf.app.flags.FLAGS
@@ -162,7 +164,7 @@ def train():
         save_config(config, FLAGS.config_file)
     make_path(FLAGS)
 
-    log_path = os.path.join("log", FLAGS.log_file)
+    log_path = FLAGS.log_file
     logger = get_logger(log_path)
     print_config(config, logger)
 
@@ -174,7 +176,7 @@ def train():
         model = create_model(sess, Model, FLAGS.ckpt_path, load_word2vec, config, id_to_char, logger)
         logger.info("start training")
         loss = []
-        for i in range(100):
+        for i in range(FLAGS.max_epoch):
             for batch in train_manager.iter_batch(shuffle=True):
                 step, batch_loss = model.run_step(sess, True, batch)
                 loss.append(batch_loss)
