@@ -1,3 +1,4 @@
+# -- coding: utf-8 --
 """Module for constructing RNN Cells."""
 from __future__ import absolute_import
 from __future__ import division
