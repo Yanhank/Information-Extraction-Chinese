@@ -103,6 +103,10 @@ class Model(object):
         else:
             raise KeyError
 
+        if is_train:
+            train_vars = tf.trainable_variables()
+            print('trainable vars:\n{}'.format(train_vars))
+
         # loss of the model
         self.loss = self.loss_layer(self.logits, self.lengths)
 
