@@ -20,6 +20,7 @@ class Model(object):
         self.char_dim = config["char_dim"]
         self.lstm_dim = config["lstm_dim"]
         self.seg_dim = config["seg_dim"]
+        self.reg_coef = config["reg_coef"]
 
         self.num_tags = config["num_tags"]
         self.num_chars = config["num_chars"]
@@ -103,12 +104,22 @@ class Model(object):
         else:
             raise KeyError
 
-        if is_train:
-            train_vars = tf.trainable_variables()
-            print('trainable vars:\n{}'.format(train_vars))
+
 
         # loss of the model
-        self.loss = self.loss_layer(self.logits, self.lengths)
+
+        classify_loss = self.loss_layer(self.logits, self.lengths)
+        # 对神经网络的权重项，计算正则化损失。
+        train_vars = tf.trainable_variables()
+        # tensorflow 1.4.0之前还不支持scope参数，改用v.name遍历查找出权重项
+        reg_loss = tf.add_n([tf.nn.l2_loss(v) for v in train_vars if
+                             r'/_w' in v.name
+                             or
+                             r'/W:' in v.name]) * self.reg_coef
+
+        #self.loss = self.loss_layer(self.logits, self.lengths)
+        #
+        self.loss = classify_loss + reg_loss
 
         with tf.variable_scope("optimizer"):
             optimizer = self.config["optimizer"]
