@@ -173,11 +173,15 @@ def train():
     tf_config = tf.ConfigProto()
     tf_config.gpu_options.allow_growth = True
     steps_per_epoch = train_manager.len_data
+    best_epoch = FLAGS.max_epoch+1
+    early_stop_epoch_margin = FLAGS.early_sto_epoch_margin
     with tf.Session(config=tf_config) as sess:
         model = create_model(sess, Model, FLAGS.ckpt_path, load_word2vec, config, id_to_char, logger)
         logger.info("start training")
         loss = []
         for i in range(FLAGS.max_epoch):
+            if i - best_epoch > early_stop_epoch_margin:
+                break
             for batch in train_manager.iter_batch(shuffle=True):
                 step, batch_loss = model.run_step(sess, True, batch)
                 loss.append(batch_loss)
@@ -191,7 +195,9 @@ def train():
             best = evaluate(sess, model, "dev", dev_manager, id_to_tag, logger)
             if best:
                 save_model(sess, model, FLAGS.ckpt_path, logger)
+                best_epoch = i
             evaluate(sess, model, "test", test_manager, id_to_tag, logger)
+        logger.info('best epoch at %10d'% best_epoch)
 
 
 def evaluate_line():
